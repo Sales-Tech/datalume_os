@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-neutral-900">Nova Venda</h1>
+            <p class="text-neutral-500">Preencha os dados para gerar um novo orçamento ou pedido.</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="text-neutral-500 hover:text-neutral-700 font-medium">Voltar</a>
+    </div>
+
+    <form method="post" id="orderForm">
+        {% csrf_token %}
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200 mb-6">
+            <h2 class="text-lg font-bold text-neutral-900 mb-4 border-b pb-2">1. Dados do Cliente</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente / Razão Social</label>
+                <input type="text" name="client_name" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 outline-none"
+                       placeholder="Ex: Empresa Teste Ltda ou João da Silva">
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200 mb-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-lg font-bold text-neutral-900">2. Produtos</h2>
+                <button type="button" onclick="addProductRow()" 
+                        class="text-sm bg-primary-100 text-primary-800 px-3 py-1 rounded-lg font-medium hover:bg-primary-200 transition-colors">
+                    + Adicionar Item
+                </button>
+            </div>
+
+            <table class="w-full text-left" id="productsTable">
+                <thead class="bg-neutral-50 text-xs uppercase text-neutral-500">
+                    <tr>
+                        <th class="px-4 py-2 w-1/2">Produto</th>
+                        <th class="px-4 py-2 w-24">Qtd.</th>
+                        <th class="px-4 py-2 w-32">Preço Unit.</th>
+                        <th class="px-4 py-2 w-32">Subtotal</th>
+                        <th class="px-4 py-2 w-10"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-200" id="productsBody">
+                    </tbody>
+            </table>
+            
+            <div id="emptyMessage" class="text-center py-8 text-neutral-400 text-sm">
+                Nenhum produto adicionado. Clique no botão acima.
+            </div>
+        </div>
+
+        <div class="flex justify-end items-center space-x-6">
+            <div class="text-right">
+                <p class="text-sm text-neutral-500">Total do Pedido</p>
+                <p class="text-3xl font-bold text-primary-600" id="grandTotal">R$ 0,00</p>
+            </div>
+            <button type="submit" 
+                    class="bg-primary-600 hover:bg-primary-800 text-white px-8 py-3 rounded-xl font-bold shadow-lg transform transition hover:scale-105">
+                Concluir Venda
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Dados dos produtos vindos do Django para o JS usar
+    const productData = {
+        {% for p in products %}
+        "{{ p.id }}": { "name": "{{ p.name }}", "price": {{ p.sale_price|stringformat:".2f" }} },
+        {% endfor %}
+    };
+
+    function addProductRow() {
+        document.getElementById('emptyMessage').style.display = 'none';
+        
+        const tbody = document.getElementById('productsBody');
+        const row = document.createElement('tr');
+        row.className = "hover:bg-neutral-50";
+        
+        row.innerHTML = `
+            <td class="px-4 py-3">
+                <select name="product_id[]" class="w-full p-2 border rounded bg-white text-sm" onchange="updateRow(this)" required>
+                    <option value="" disabled selected>Selecione um produto...</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.sku }} - {{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" name="quantity[]" value="1" min="1" 
+                       class="w-full p-2 border rounded text-sm text-center" onchange="updateRow(this)" onkeyup="updateRow(this)">
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 price-display">R$ 0,00</td>
+            <td class="px-4 py-3 text-sm font-bold text-gray-900 subtotal-display">R$ 0,00</td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" onclick="removeRow(this)" class="text-red-500 hover:text-red-700">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        lucide.createIcons(); // Recarrega os ícones na nova linha
+    }
+
+    function removeRow(btn) {
+        const row = btn.closest('tr');
+        row.remove();
+        calculateGrandTotal();
+        
+        if(document.getElementById('productsBody').children.length === 0) {
+            document.getElementById('emptyMessage').style.display = 'block';
+        }
+    }
+
+    function updateRow(element) {
+        const row = element.closest('tr');
+        const select = row.querySelector('select');
+        const quantityInput = row.querySelector('input');
+        const priceDisplay = row.querySelector('.price-display');
+        const subtotalDisplay = row.querySelector('.subtotal-display');
+
+        const productId = select.value;
+        const qty = parseFloat(quantityInput.value) || 0;
+
+        if (productId && productData[productId]) {
+            const price = parseFloat(productData[productId].price);
+            const subtotal = price * qty;
+
+            priceDisplay.textContent = `R$ ${price.toFixed(2)}`;
+            subtotalDisplay.textContent = `R$ ${subtotal.toFixed(2)}`;
+            row.dataset.subtotal = subtotal; // Guarda o valor para somar depois
+        }
+        calculateGrandTotal();
+    }
+
+    function calculateGrandTotal() {
+        let total = 0;
+        document.querySelectorAll('#productsBody tr').forEach(row => {
+            total += parseFloat(row.dataset.subtotal) || 0;
+        });
+        document.getElementById('grandTotal').textContent = `R$ ${total.toFixed(2)}`;
+    }
+    
+    // Inicia com uma linha vazia
+    window.onload = function() {
+        addProductRow();
+    }
+</script>
+{% endblock %}

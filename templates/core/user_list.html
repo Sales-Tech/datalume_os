@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-neutral-900">Gestão de Usuários</h1>
+    <a href="{% url 'user_create' %}" class="bg-primary-600 hover:bg-primary-800 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+        <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>
+        Novo Usuário
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+    <table class="w-full text-left text-sm text-neutral-500">
+        <thead class="bg-neutral-50 text-xs uppercase text-neutral-500">
+            <tr>
+                <th class="px-6 py-3 font-medium">Usuário</th>
+                <th class="px-6 py-3 font-medium">Nome Completo</th>
+                <th class="px-6 py-3 font-medium">E-mail</th>
+                <th class="px-6 py-3 font-medium">Perfil (Role)</th>
+                <th class="px-6 py-3 font-medium">Status</th>
+                <th class="px-6 py-3 font-medium">Ações</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-200">
+            {% for u in users %}
+            <tr class="hover:bg-neutral-50">
+                <td class="px-6 py-4 font-medium text-neutral-900">{{ u.username }}</td>
+                <td class="px-6 py-4">{{ u.first_name }} {{ u.last_name }}</td>
+                <td class="px-6 py-4">{{ u.email }}</td>
+                <td class="px-6 py-4">
+                    {% if u.role == 'ADMIN' %}
+                        <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">Administrador</span>
+                    {% elif u.role == 'MANAGER' %}
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-bold">Gestor</span>
+                    {% else %}
+                        <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full font-bold">Operador</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                    {% if u.is_active %}
+                        <span class="text-green-600 font-medium">Ativo</span>
+                    {% else %}
+                        <span class="text-red-600 font-medium">Inativo</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 flex items-center space-x-3">
+                    <a href="{% url 'user_edit' u.pk %}" class="text-blue-600 hover:text-blue-800" title="Editar Usuário">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </a>
+
+                    <a href="{% url 'user_resend_invite' u.pk %}"
+                       class="text-yellow-600 hover:text-yellow-800"
+                       title="Enviar e-mail para trocar senha"
+                       onclick="return confirm('Deseja enviar um e-mail para {{ u.username }} redefinir a senha?')">
+                        <i data-lucide="mail-warning" class="w-4 h-4"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

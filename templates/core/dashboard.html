@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-neutral-900">Visão Geral</h1>
+        <p class="text-neutral-500">Bem-vindo de volta, {{ user.first_name|default:user.username }}!</p>
+    </div>
+    <a href="{% url 'order_create' %}"
+       class="inline-flex items-center bg-primary-600 hover:bg-primary-800 text-white px-4 py-2 rounded-lg transition-colors shadow-sm font-medium gap-2 no-underline">
+        <i data-lucide="plus" class="w-5 h-5"></i>
+        <span>Nova Venda</span>
+    </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-neutral-500">Vendas Faturadas</p>
+                <h3 class="text-3xl font-bold text-neutral-900 mt-2">{{ total_vendas }}</h3>
+            </div>
+            <div class="p-2 bg-green-100 rounded-lg text-green-600">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-neutral-500">A Receber (Pendente)</p>
+                <h3 class="text-3xl font-bold text-primary-600 mt-2">R$ {{ receber_pendente|floatformat:2 }}</h3>
+            </div>
+            <div class="p-2 bg-primary-100 rounded-lg text-primary-600">
+                <i data-lucide="arrow-down-left" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-neutral-500">A Pagar (Pendente)</p>
+                <h3 class="text-3xl font-bold text-red-600 mt-2">R$ {{ pagar_pendente|floatformat:2 }}</h3>
+            </div>
+            <div class="p-2 bg-red-100 rounded-lg text-red-600">
+                <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-neutral-200">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-medium text-neutral-500">Produtos Cadastrados</p>
+                <h3 class="text-3xl font-bold text-neutral-900 mt-2">{{ total_produtos }}</h3>
+            </div>
+            <div class="p-2 bg-orange-100 rounded-lg text-orange-600">
+                <i data-lucide="package" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-neutral-200 flex justify-between items-center">
+        <h2 class="font-bold text-neutral-900">Pedidos Recentes</h2>
+        <a href="#" class="text-sm text-primary-600 hover:text-primary-800 font-medium">Ver todos</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-neutral-500">
+            <thead class="bg-neutral-50 text-xs uppercase text-neutral-500">
+                <tr>
+                    <th class="px-6 py-3 font-medium">ID</th>
+                    <th class="px-6 py-3 font-medium">Cliente</th>
+                    <th class="px-6 py-3 font-medium">Data</th>
+                    <th class="px-6 py-3 font-medium">Valor Total</th>
+                    <th class="px-6 py-3 font-medium">Status</th>
+                    <th class="px-6 py-3 font-medium">Ação</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                {% for order in ultimos_pedidos %}
+                <tr class="hover:bg-neutral-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-neutral-900">#{{ order.id }}</td>
+                    <td class="px-6 py-4">{{ order.client_name }}</td>
+                    <td class="px-6 py-4">{{ order.created_at|date:"d/m/Y" }}</td>
+                    <td class="px-6 py-4 font-medium">R$ {{ order.calculate_total|floatformat:2 }}</td>
+                    <td class="px-6 py-4">
+                        {% if order.status == 'INVOICED' %}
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">Faturado</span>
+                        {% elif order.status == 'BUDGET' %}
+                            <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">Orçamento</span>
+                        {% else %}
+                            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full font-medium">{{ order.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="#" class="text-primary-600 hover:text-primary-800 font-medium">Detalhes</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-neutral-400">
+                        Nenhum pedido recente encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
